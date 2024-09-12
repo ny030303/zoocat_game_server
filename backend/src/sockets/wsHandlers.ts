@@ -10,7 +10,7 @@ export function setupSocketHandlers(server: any) {
         ws.on('message', async (data: string) => {
             try {
                 const message = JSON.parse(data);
-                const { event, payload } = message;
+                const { event, data:payload } = message;
 
                 switch (event) {
                     case 'signup':

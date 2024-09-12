@@ -23,9 +23,9 @@ export function setupSocketHandlers(io: SocketIOServer) {
         });
 
         // Handle user login
-        socket.on('login', async (credentials: UserCredentials) => {
+        socket.on('login', async (message: { data: any }) => {
             try {
-                console.log("login credentials: " + credentials);
+                const credentials = message.data;  // 'data' 필드에서 자격증명 추출
                 const userProfile: UserProfile | null = await authenticateUser(credentials);
                 if (userProfile) {
                     socket.emit('loginSuccess', { message: 'Login successful', userProfile });
