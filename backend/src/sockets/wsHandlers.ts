@@ -1,5 +1,6 @@
 import WebSocket, { Server, WebSocketServer } from 'ws';
 import { authenticateUser, registerUser, UserCredentials, UserRegistration, UserProfile } from './auth';
+import { getUserUnits, getUserUnitsDTO } from './lobby';  // Assuming lobby.ts is in the same folder
 
 export function setupSocketHandlers(server: any) {
     const wss = new WebSocketServer({ server });
@@ -29,7 +30,7 @@ async function handleMessage(ws: WebSocket, data: string, wss: WebSocketServer) 
                 break;
 
             case 'joinLobby':
-                handleJoinLobby(ws, payload as string);
+                handleJoinLobby(ws, payload as getUserUnitsDTO);
                 break;
 
             case 'leaveLobby':
@@ -79,10 +80,24 @@ async function handleLogin(ws: WebSocket, credentials: UserCredentials) {
 }
 
 // 로비 입장 처리 함수
-function handleJoinLobby(ws: WebSocket, lobbyId: string) {
-    ws.send(JSON.stringify({ event: 'userJoined', data: lobbyId }));
-    console.log(`사용자가 로비 ${lobbyId}에 참여했습니다.`);
+async function handleJoinLobby(ws: WebSocket, dto: getUserUnitsDTO) {
+    try {
+        const userUnits = await getUserUnits(dto.userId);
+
+        // 로비 참여 이벤트 전송
+        ws.send(JSON.stringify({ event: 'userJoined', data: { units: userUnits } }));
+        console.log(`사용자가 로비에 참여했습니다. 유닛 데이터:`, userUnits);
+    }  catch (error) {
+        if (error instanceof Error) {
+            ws.send(JSON.stringify({ event: 'error', message: error.message }));
+            console.log(`Error: ${error.message}`);
+        } else {
+            ws.send(JSON.stringify({ event: 'error', message: 'An unknown error occurred.' }));
+            console.log('An unknown error occurred.');
+        }
+    }
 }
+
 
 // 로비 나가기 처리 함수
 function handleLeaveLobby(ws: WebSocket, lobbyId: string) {
