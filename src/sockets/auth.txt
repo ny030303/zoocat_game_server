@@ -1,5 +1,5 @@
 import { Db } from 'mongodb';
-import { getDb } from '../db/db';
+import { getDb } from '../config/db';
 
 export interface UserProfile {
     id: string;
@@ -9,7 +9,7 @@ export interface UserProfile {
     friends: string[];
     country: string;
     language: string;
-    selected_units: string[];
+    selectedUnits: number[];
     gold: number,    // 무료 재화
     gems: number     // 유료 재화
 }
@@ -54,7 +54,7 @@ export async function registerUser(userData: UserRegistration): Promise<{ messag
         friends: [],
         country: "",
         language: "ko",
-        selected_units: [],
+        selectedUnits: [1001,1002,1003,1004,1005],
         gold: 1000,    // 무료 재화
         gems: 0        // 유료 재화
     };
@@ -63,16 +63,17 @@ export async function registerUser(userData: UserRegistration): Promise<{ messag
 
     // 기본 유닛 데이터 생성 (Unit 인터페이스를 사용)
     const initialUnits: Unit[] = [
-        { id: 10001, unlock: 1, lv: 1, exp: 0, piece: 30 },
-        { id: 10002, unlock: 0, lv: 0, exp: 0, piece: 20 },
-        { id: 10003, unlock: 0, lv: 0, exp: 0, piece: 0 },
-        { id: 10004, unlock: 0, lv: 0, exp: 0, piece: 0 },
-        { id: 10005, unlock: 0, lv: 0, exp: 0, piece: 0 }
+        { id: 1001, unlock: 1, lv: 1, exp: 0, piece: 30 },
+        { id: 1002, unlock: 1, lv: 1, exp: 0, piece: 20 },
+        { id: 1003, unlock: 1, lv: 1, exp: 0, piece: 0 },
+        { id: 1004, unlock: 1, lv: 1, exp: 0, piece: 0 },
+        { id: 1005, unlock: 1, lv: 1, exp: 0, piece: 0 },
+        { id: 1006, unlock: 0, lv: 0, exp: 0, piece: 0 }
     ];
 
     // units 컬렉션에 해당 유저의 유닛 데이터를 삽입
     await unitsCollection.insertOne({
-        user_id: userData.id,
+        userId: userData.id,
         units: initialUnits
     });
 

@@ -14,12 +14,13 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ./
     ports:
       - "3000:3000"
     volumes:
-      - ./backend/src:/app/src
+      - ./src:/app/src
       - /app/node_modules
+    env_file: .env  # 이 부분 추가
     environment:
       MONGO_URI: mongodb://root:example@mongo:27017/zoocat?authSource=admin
       DB_NAME: zoocat
