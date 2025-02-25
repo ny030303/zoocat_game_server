@@ -3,14 +3,19 @@ version: '3.8'
 services:
   mongo:
     image: mongo:latest
-    container_name: mongodb
+    container_name: mongo
     ports:
       - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
-    volumes:
-      - mongo-data:/data/db
+    networks:
+      - mynetwork
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet mongodb://root:example@localhost:27017/admin
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -20,13 +25,15 @@ services:
     volumes:
       - ./src:/app/src
       - /app/node_modules
-    env_file: .env  # 이 부분 추가
     environment:
       MONGO_URI: mongodb://root:example@mongo:27017/zoocat?authSource=admin
       DB_NAME: zoocat
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     command: npm run dev
+    networks:
+      - mynetwork
 
-volumes:
-  mongo-data:
+networks:
+  mynetwork:

@@ -35,13 +35,14 @@ async function startServer() {
         setupSocketHandlers(httpServer);
 
         // 서버 시작
-        httpServer.listen(port, () => {
+        httpServer.listen(port, '0.0.0.0', () => {
             console.log(`
                 #############################################
                     🛡️ Server listening on port: ${port} 🛡️
                 #############################################    
-                `);
+            `);
         });
+        
     } catch (error) {
         console.error('Failed to start server:', error);
     }
