@@ -8,12 +8,13 @@ export class UserRepository {
 
     static async findByUsername(username: string) {
         const usersCollection = this.getCollection();
-        return await usersCollection.findOne({ username });
+        // String() 강제로 NoSQL 연산자 객체({$ne:...} 등) 주입 차단
+        return await usersCollection.findOne({ username: String(username) });
     }
 
     static async findById(id: string) {
         const usersCollection = this.getCollection();
-        return await usersCollection.findOne({ id });
+        return await usersCollection.findOne({ id: String(id) });
     }
 
     static async createUser(userData: UserRegistration, profile: UserProfile) {
@@ -25,7 +26,7 @@ export class UserRepository {
      static async updateDeck(userId: string, newDeck: string[]) {
         const usersCollection = this.getCollection();
         const result = await usersCollection.updateOne(
-            { id: userId },
+            { id: String(userId) },
             { $set: { selectedUnits: newDeck } }
         );
         return result.modifiedCount > 0;

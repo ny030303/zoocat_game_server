@@ -123,6 +123,8 @@
 
 ### 3.3 Security
 
+**매칭 기능 자체**
+
 | Severity | 항목 | 검증 |
 |---|---|---|
 | ✅ | 인증 게이트 | `enqueue`/`matchMessage`/`leaveMatch` 모두 `getUserId(ws)` 필수. bind 는 login 성공 시에만 |
@@ -130,6 +132,20 @@
 | ✅ | 제3자 격리 | `opponentOf` 로 특정된 1명에게만 `sendTo` (브로드캐스트 아님, 스모크 검증) |
 | ✅ | payload 불신뢰 | 서버가 저장/파싱 안 함 → 인젝션 표면 없음 |
 | 🟡 | Rate limiting | `matchMessage` 폭주 제한 없음 — Plan Out of Scope, 알려진 사항 |
+
+**같은 브랜치에서 함께 수정한 서버 전역 이슈 (매칭의 인증 게이트가 `login` 만큼만 안전하므로)**
+
+| Severity | 항목 | 수정 |
+|---|---|---|
+| 🔴 FIXED | NoSQL 인젝션 → 인증 우회 | `userRepository.findById/findByUsername/updateDeck` 에 `String()` 강제 + `authHandlers.isValidCredential` 타입 가드. 스모크: `login` 에 `{$ne}` 주입 → 거부 |
+| 🔴 FIXED | IDOR (`updateDeck`/`joinLobby` 가 `payload.userId` 신뢰) | 두 핸들러 모두 `getUserId(ws)` 기준으로 전환. 스모크: `payload.userId='victim'` 무시 확인 |
+| 🔴 FIXED | `sendMessage` 무제한·무인증 브로드캐스트 | 로그인 필수 + `message` 문자열·길이(≤500) 검증 + `from` 필드 추가 |
+| 🔴 FIXED | WebSocket `maxPayload` 무제한(100MB) | `WebSocketServer({ maxPayload: 64*1024 })` |
+| 🟡 FIXED | 연결당 rate limit 없음 | `rateLimiter.ts` — 슬라이딩 윈도우 100 msg / 10s, 초과 시 `error: 요청이 너무 많습니다` |
+| 🟡 FIXED | Origin 검증 없음 (CSWSH) | `verifyClient` + `ALLOWED_ORIGINS` env (미설정 시 전체 허용+경고, 네이티브 클라 통과) |
+| 🟡 FIXED | 입력값 심화 검증 | `userName` ≤32 / `id` ≤128 자, `updateDeck` = 5개 고유 문자열 + **보유 유닛 확인** (`UnitRepository` 대조) |
+| 🟡 FIXED | 죽은(half-open) 연결 누수 | ping/pong 하트비트 30s, 무응답 시 `terminate()` |
+| 🟡 PENDING | 진짜 세션 토큰 (login 이 비밀번호/토큰 없이 id 만으로) | **별도 PDCA** — "login 자동가입" 설계를 바꾸므로 (서버 생성 랜덤 id + 서명 토큰). `bkit:security-architect` 리뷰 권장 |
 
 ---
 

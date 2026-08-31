@@ -299,6 +299,60 @@ async function main() {
         anon.close();
     });
 
+    // ── 보안 회귀 ───────────────────────────────────────────
+    await test('보안 — login 에 NoSQL 연산자 주입 시 거부', async () => {
+        const sec = new TestClient('sec');
+        await sec.connect();
+        sec.send('login', { id: { $ne: 'x' }, userName: 'x', underage: 'false' });
+        const r = await sec.waitFor(['loginSuccess', 'loginError', 'signupResult', 'signupError']);
+        assert(
+            r.event === 'loginError' || r.event === 'signupError',
+            `주입 거부 예상, 실제 ${r.event}: ${JSON.stringify(r.data)}`,
+        );
+        sec.close();
+    });
+
+    await test('보안 — updateDeck 는 연결 유저 기준(payload.userId 무시)', async () => {
+        c1.send('login', { id: uid, userName: uid, underage: 'false' });
+        await c1.waitFor(['loginSuccess', 'loginError']);
+        c1.send('updateDeck', { userId: 'nonexistent-victim', newDeck: ['1001', '1002', '1003', '1004', '1005'] });
+        const r = await c1.waitFor(['deckUpdated', 'deckUpdateError']);
+        if (r.event === 'deckUpdateError') {
+            assert(!String(r.data).includes('not found'), `payload.userId 를 신뢰함: ${r.data}`);
+        }
+    });
+
+    await test('보안 — 미로그인 연결의 updateDeck / sendMessage 는 거부', async () => {
+        const sec = new TestClient('sec2');
+        await sec.connect();
+        sec.send('updateDeck', { newDeck: ['1001', '1002', '1003', '1004', '1005'] });
+        const r1 = await sec.waitFor(['deckUpdated', 'deckUpdateError']);
+        assert(r1.event === 'deckUpdateError' && String(r1.data).includes('로그인'), `updateDeck 거부 예상: ${r1.event} ${r1.data}`);
+        sec.send('sendMessage', { message: 'hi' });
+        const r2 = await sec.waitFor(['newMessage', 'error']);
+        assert(r2.event === 'error' && String(r2.data).includes('로그인'), `sendMessage 거부 예상: ${r2.event} ${r2.data}`);
+        sec.close();
+    });
+
+    await test('보안 — updateDeck: 중복 유닛 / 미보유 유닛 거부', async () => {
+        c1.send('login', { id: uid, userName: uid, underage: 'false' });
+        await c1.waitFor(['loginSuccess', 'loginError']);
+
+        c1.send('updateDeck', { newDeck: ['1001', '1001', '1002', '1003', '1004'] });
+        const dup = await c1.waitFor(['deckUpdated', 'deckUpdateError']);
+        assert(dup.event === 'deckUpdateError', `중복 유닛 거부 예상: ${dup.event}`);
+
+        c1.send('updateDeck', { newDeck: ['1001', '1002', '1003', '1004', '9999'] });
+        const unknown = await c1.waitFor(['deckUpdated', 'deckUpdateError']);
+        assert(unknown.event === 'deckUpdateError', `미보유 유닛 거부 예상: ${unknown.event}`);
+    });
+
+    await test('보안 — sendMessage: 500자 초과 거부', async () => {
+        c1.send('sendMessage', { message: 'x'.repeat(501) });
+        const r = await c1.waitFor(['newMessage', 'error']);
+        assert(r.event === 'error', `길이 초과 거부 예상: ${r.event}`);
+    });
+
     c3.close();
     c1.close();
     c2.close();
