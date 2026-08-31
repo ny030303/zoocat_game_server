@@ -1,5 +1,6 @@
 import WebSocket, { WebSocketServer } from 'ws';
 import { setupEventHandlers } from './eventHandlers';
+import { handleDisconnect } from './matchHandlers';
 
 export function setupSocketHandlers(server: any) {
     const wss = new WebSocketServer({ server, host: '0.0.0.0' });
@@ -7,7 +8,10 @@ export function setupSocketHandlers(server: any) {
     wss.on('connection', (ws: WebSocket) => {
         console.log('사용자가 연결되었습니다');
         ws.on('message', async (data: string) => setupEventHandlers(ws, data, wss));
-        ws.on('close', () => console.log('사용자가 연결을 끊었습니다'));
+        ws.on('close', () => {
+            handleDisconnect(ws);
+            console.log('사용자가 연결을 끊었습니다');
+        });
         ws.on('error', (error: Error) => console.error('웹소켓 오류:', error));
     });
 

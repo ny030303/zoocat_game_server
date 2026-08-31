@@ -2,6 +2,7 @@ import WebSocket from 'ws';
 import { AuthService } from '../services/authService';
 import { UserService } from '../services/userService';
 import { UserRegistration, UserCredentials } from '../models/userModel';
+import { bind } from './connectionRegistry';
 
 export async function handleSignup(ws: WebSocket, registrationData: UserRegistration) {
     try {
@@ -15,6 +16,7 @@ export async function handleSignup(ws: WebSocket, registrationData: UserRegistra
 export async function handleLogin(ws: WebSocket, credentials: UserCredentials) {
     try {
         const { userProfile, isNewUser } = await AuthService.loginOrRegister(credentials);
+        bind(userProfile.id, ws); // 이후 매칭 등 실시간 기능이 이 연결을 userId 로 찾는다
         ws.send(JSON.stringify({
             event: 'loginSuccess',
             data: {
