@@ -1,8 +1,9 @@
 import { MongoClient, Db } from 'mongodb';
 
 let dbInstance: Db | null = null;
-const MONGO_URI = 'mongodb://root:example@mongo:27017/zoocat?authSource=admin';
-const DB_NAME = 'zoocat';
+const MONGO_URI = process.env.MONGO_URI
+    ?? 'mongodb://root:example@localhost:27017/zoocat?authSource=admin'; // 로컬(호스트 실행) fallback
+const DB_NAME = process.env.DB_NAME ?? 'zoocat';
 
 /**
  * MongoDB에 연결하고 DB 인스턴스를 반환하는 함수

@@ -14,13 +14,15 @@ export async function handleSignup(ws: WebSocket, registrationData: UserRegistra
 
 export async function handleLogin(ws: WebSocket, credentials: UserCredentials) {
     try {
-        const userProfile = await AuthService.authenticateUser(credentials);
-        if (userProfile) {
-            ws.send(JSON.stringify({ event: 'loginSuccess', data: { message: '로그인 성공', userProfile } }));
-        } else {
-            handleSignup(ws, credentials);
-            // ws.send(JSON.stringify({ event: 'loginFailure', data: { message: '잘못된 자격 증명' } }));
-        }
+        const { userProfile, isNewUser } = await AuthService.loginOrRegister(credentials);
+        ws.send(JSON.stringify({
+            event: 'loginSuccess',
+            data: {
+                message: isNewUser ? '신규 가입 및 로그인' : '로그인 성공',
+                userProfile,
+                isNewUser,
+            },
+        }));
     } catch (error) {
         ws.send(JSON.stringify({ event: 'loginError', data: (error as Error).message }));
     }
