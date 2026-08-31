@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.github
+.bkit
+scripts
+docs
+*.log
+.env
+.env.*
+Dockerfile*
+docker-compose*.yaml
+README.md
+DEPLOY.md
+yarn.lock

@@ -18,7 +18,10 @@ export class UnitRepository {
             { id: "1003", unlock: 1, lv: 1, exp: 0, piece: 0 },
             { id: "1004", unlock: 1, lv: 1, exp: 0, piece: 0 },
             { id: "1005", unlock: 1, lv: 1, exp: 0, piece: 0 },
-            { id: "1006", unlock: 0, lv: 0, exp: 0, piece: 0 }
+            { id: "1006", unlock: 0, lv: 0, exp: 0, piece: 0 },
+            { id: "1007", unlock: 0, lv: 0, exp: 0, piece: 0 },
+            { id: "1008", unlock: 0, lv: 0, exp: 0, piece: 0 },
+            { id: "1009", unlock: 0, lv: 0, exp: 0, piece: 0 }
         ];
         return await this.getUnitsCollection().insertOne({ userId, units: initialUnits });
     }

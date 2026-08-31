@@ -1,0 +1,22 @@
+# 배포 이미지 — 멀티스테이지. GitHub Actions 가 빌드해 GHCR 로 push 한다.
+# 최종 이미지에는 컴파일된 dist + 프로덕션 의존성만 포함 (ts-node/nodemon/typescript 제외).
+
+# ---------- build stage ----------
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY tsconfig.json ./
+COPY src ./src
+RUN npm run build                       # tsc -> /app/dist
+
+# ---------- runtime stage ----------
+FROM node:20-alpine AS runtime
+ENV NODE_ENV=production
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY --from=builder /app/dist ./dist
+USER node
+EXPOSE 3000
+CMD ["node", "--max-old-space-size=384", "dist/index.js"]

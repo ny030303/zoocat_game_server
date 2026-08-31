@@ -1,16 +1,24 @@
-version: '3.8'
-
+# 로컬 개발용 — mongo + backend 를 함께 띄운다.
+#   전부 도커:        docker compose up
+#   DB만 도커:        docker compose up -d mongo   (앱은 호스트에서 npm run dev)
 services:
   mongo:
-    image: mongo:latest
-    container_name: mongodb
+    image: mongo:7                     # Atlas M0(7.0)와 메이저 버전 맞춤
+    container_name: mongo
     ports:
       - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
     volumes:
-      - mongo-data:/data/db
+      - mongo_data:/data/db            # compose down 해도 로컬 데이터 유지
+    networks:
+      - mynetwork
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet mongodb://root:example@localhost:27017/admin
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -20,13 +28,19 @@ services:
     volumes:
       - ./src:/app/src
       - /app/node_modules
-    env_file: .env  # 이 부분 추가
     environment:
       MONGO_URI: mongodb://root:example@mongo:27017/zoocat?authSource=admin
       DB_NAME: zoocat
+      CHOKIDAR_USEPOLLING: "true"   # Windows/Docker 바인드 마운트에서 nodemon 핫리로드 활성화
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     command: npm run dev
+    networks:
+      - mynetwork
 
 volumes:
-  mongo-data:
+  mongo_data:
+
+networks:
+  mynetwork:
