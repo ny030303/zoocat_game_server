@@ -69,15 +69,19 @@ docker compose -f docker-compose.prod.yaml up -d
 curl -sf localhost:3000/health          # {"ok":true}
 ```
 
-### 4. (선택) TLS + wss:// — 리버스 프록시
-브라우저/앱이 `wss://` 로 붙으려면 앞단에 Caddy 등:
-```
-# /etc/caddy/Caddyfile
-game.example.com {
-    reverse_proxy 127.0.0.1:3000
-}
-```
-컨테이너 포트는 `docker-compose.prod.yaml` 에서 `127.0.0.1:3000` 으로만 바인딩됨.
+### 4. TLS + wss:// — Caddy 리버스 프록시 (compose에 포함됨)
+`docker-compose.prod.yaml` 에 `caddy` 서비스가 함께 뜬다. 자동 HTTPS + WebSocket 처리.
+
+준비:
+1. **DNS A 레코드**: `game.내도메인.com` → 박스 공인 IP (`curl -s ifconfig.me`)
+2. **박스 방화벽**: 80, 443 인바운드 오픈 (클라우드 보안그룹 + `ufw` 둘 다 확인)
+3. **박스 `.env` 에 도메인 추가**: `DOMAIN=game.내도메인.com` (없으면 배포가 `set DOMAIN in .env` 로 실패)
+4. `./scripts/deploy.sh latest` → Caddy 가 인증서 발급 (A 레코드가 박스를 가리키고 포트가 열려 있어야 성공)
+
+확인: `curl -sf https://game.내도메인.com/health` → `{"ok":true}`. 클라는 `wss://game.내도메인.com`.
+
+> 도메인이 없으면 임시로 `DOMAIN=<박스IP를->로-바꾼값>.sslip.io` 사용 가능 (예: `1.2.3.4` → `1-2-3-4.sslip.io`).
+> 인증서는 `caddy_data` 볼륨에 영속되므로 재배포해도 재발급 안 함.
 
 ## 일상 배포
 

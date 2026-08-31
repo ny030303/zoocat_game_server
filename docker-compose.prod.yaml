@@ -1,21 +1,17 @@
-# 배포 전용 — mongo 서비스 없음. MONGO_URI 는 .env 에서 Atlas 를 가리킨다.
+# 배포 전용 — backend(GHCR 이미지) + caddy(리버스 프록시 · 자동 HTTPS).
+# MongoDB 는 Atlas (.env 의 MONGO_URI). 도메인은 .env 의 DOMAIN.
 #
-#   실행:   export IMAGE_TAG=<commit-sha>        # 또는 latest
-#           docker compose -f docker-compose.prod.yaml pull
-#           docker compose -f docker-compose.prod.yaml up -d
-#
-# 이미지는 CI(GitHub Actions)가 빌드해 GHCR 에 올린 것을 pull 한다.
-# CI 세팅 전이라면 로컬에서 `docker build -f Dockerfile.prod -t <이미지> . && docker push <이미지>`
-# 하거나, 임시로 아래 build: 줄의 주석을 풀어 박스에서 직접 빌드한다(1GB 박스에서는 비권장).
+#   export IMAGE_TAG=<commit-sha>        # 또는 latest
+#   docker compose -f docker-compose.prod.yaml pull
+#   docker compose -f docker-compose.prod.yaml up -d
 services:
   backend:
     image: ghcr.io/ny030303/zoocat_game_server:${IMAGE_TAG:-latest}
-    # build: { context: ./, dockerfile: Dockerfile.prod }
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"          # 리버스 프록시(예: Caddy)만 접근
+      - "127.0.0.1:3000:3000"          # 박스 로컬 디버깅용 (외부 노출 X). caddy 는 backend:3000 으로 접근
     env_file:
-      - .env                            # MONGO_URI, DB_NAME, PORT ... 이미지에 넣지 않음
+      - .env
     mem_limit: 700m
     memswap_limit: 1400m
     healthcheck:
@@ -24,3 +20,24 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"                   # HTTP/3 (QUIC)
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data                # 발급 인증서·ACME 계정 — 반드시 영속 (없으면 재시작마다 재발급 → LE 레이트리밋)
+      - caddy_config:/config
+    mem_limit: 100m
+
+volumes:
+  caddy_data:
+  caddy_config:

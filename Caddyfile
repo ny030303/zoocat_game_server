@@ -1,0 +1,6 @@
+# {$DOMAIN} 은 docker-compose.prod.yaml 이 .env 에서 주입한다.
+# Caddy 가 이 도메인의 Let's Encrypt 인증서를 자동 발급·갱신하고,
+# http→https 리다이렉트, WebSocket 업그레이드까지 알아서 처리한다.
+{$DOMAIN} {
+	reverse_proxy backend:3000
+}
