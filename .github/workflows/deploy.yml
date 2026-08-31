@@ -49,4 +49,4 @@ jobs:
             cd ~/zoocat
             git fetch --depth 1 origin master
             git reset --hard origin/master
-            ./scripts/deploy.sh ${{ github.sha }}
+            bash scripts/deploy.sh ${{ github.sha }}
