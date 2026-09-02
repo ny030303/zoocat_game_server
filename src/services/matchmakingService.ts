@@ -32,3 +32,8 @@ export function isQueued(userId: string): boolean {
 export function queueSize(): number {
     return queue.length;
 }
+
+/** 관리자 조회용 — 현재 대기열 스냅샷. */
+export function snapshot(): { size: number; userIds: string[] } {
+    return { size: queue.length, userIds: [...queue] };
+}

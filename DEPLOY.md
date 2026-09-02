@@ -29,6 +29,11 @@ push master
 - Network Access: **배포 박스 IP만 허용** (`0.0.0.0/0` 금지)
 - Connect → Drivers → 연결 문자열 복사
 
+### 1-b. (선택) 매칭 풀 조회 활성화
+박스 `.env` 에 `ADMIN_TOKEN=<긴 랜덤 문자열>` 추가하면 `GET /debug/matchmaking` 이 켜진다
+(헤더 `x-admin-token` 필요). 조회: `curl -s -H "x-admin-token: <값>" localhost:3000/debug/matchmaking`.
+비우면 그 엔드포인트는 404 로 비활성.
+
 ### 2. GitHub 저장소 Secrets (Settings → Secrets and variables → Actions)
 | Secret | 값 |
 |---|---|

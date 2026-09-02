@@ -49,3 +49,13 @@ export function endMatch(matchId: string): Match | undefined {
 export function activeCount(): number {
     return matches.size;
 }
+
+/** 관리자 조회용 — 진행 중인 매치 스냅샷. */
+export function snapshot(): { matchId: string; players: string[]; ageMs: number }[] {
+    const now = Date.now();
+    return [...matches.values()].map((m) => ({
+        matchId: m.id,
+        players: [...m.players],
+        ageMs: now - m.createdAt,
+    }));
+}

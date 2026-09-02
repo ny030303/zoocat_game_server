@@ -32,6 +32,7 @@ services:
       MONGO_URI: mongodb://root:example@mongo:27017/zoocat?authSource=admin
       DB_NAME: zoocat
       CHOKIDAR_USEPOLLING: "true"   # Windows/Docker 바인드 마운트에서 nodemon 핫리로드 활성화
+      ADMIN_TOKEN: dev-admin-token  # 로컬 전용. GET /debug/matchmaking 조회용
     depends_on:
       mongo:
         condition: service_healthy

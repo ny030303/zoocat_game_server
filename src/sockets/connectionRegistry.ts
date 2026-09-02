@@ -47,6 +47,16 @@ export function getSocket(userId: string): WebSocket | undefined {
     return byUser.get(userId);
 }
 
+/** 관리자 조회용 — 현재 바인딩된 연결 수. */
+export function onlineCount(): number {
+    return byUser.size;
+}
+
+/** 관리자 조회용 — 로그인된 userId 목록. */
+export function onlineUserIds(): string[] {
+    return [...byUser.keys()];
+}
+
 /** 특정 유저에게 이벤트를 보낸다. 연결이 없거나 열려있지 않으면 false. */
 export function sendTo(userId: string, event: string, data: unknown): boolean {
     const ws = byUser.get(userId);
