@@ -1,14 +1,39 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-08-31T02:16:48.007Z",
+  "lastUpdated": "2026-09-02T05:19:16.225Z",
   "activeFeatures": [
     "config",
     "zoocat_game_server",
     "scripts",
-    "sockets"
+    "sockets",
+    "matchmaking",
+    "repositories"
   ],
-  "primaryFeature": "config",
+  "primaryFeature": "matchmaking",
   "features": {
+    "matchmaking": {
+      "phase": "check",
+      "phaseNumber": 4,
+      "matchRate": 96,
+      "iterationCount": 0,
+      "requirements": [
+        "FR-01 login 연결↔userId 바인딩",
+        "FR-03 enqueue 로그인 게이트",
+        "FR-04 페어링 시 matchFound",
+        "FR-08 matchMessage 참가자 검증 후 중계",
+        "FR-10 연결 종료 시 큐/매치 정리"
+      ],
+      "documents": {
+        "plan": "docs/01-plan/features/matchmaking.plan.md",
+        "design": "docs/02-design/features/matchmaking.design.md",
+        "analysis": "docs/03-analysis/matchmaking.analysis.md"
+      },
+      "timestamps": {
+        "started": "2026-08-31T02:30:00.000Z",
+        "lastUpdated": "2026-08-31T09:10:00.000Z"
+      },
+      "lastFile": "src/sockets/socketServer.ts"
+    },
     "config": {
       "phase": "do",
       "phaseNumber": 3,
@@ -31,9 +56,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-08-31T01:32:17.958Z",
-        "lastUpdated": "2026-08-31T01:55:58.064Z"
+        "lastUpdated": "2026-09-02T05:19:16.225Z"
       },
-      "lastFile": "c:\\project_workspace\\zoocat_game_server\\src\\controllers\\authController.ts"
+      "lastFile": "c:\\project_workspace\\zoocat_game_server\\src\\index.ts"
     },
     "scripts": {
       "phase": "do",
@@ -44,9 +69,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-08-31T01:49:23.486Z",
-        "lastUpdated": "2026-08-31T02:16:48.007Z"
+        "lastUpdated": "2026-08-31T08:29:19.645Z"
       },
-      "lastFile": "c:\\project_workspace\\zoocat_game_server\\scripts\\deploy.sh"
+      "lastFile": "c:\\project_workspace\\zoocat_game_server\\scripts\\socket-test.ts"
     },
     "sockets": {
       "phase": "do",
@@ -57,9 +82,22 @@
       "documents": {},
       "timestamps": {
         "started": "2026-08-31T01:54:35.565Z",
-        "lastUpdated": "2026-08-31T01:54:35.565Z"
+        "lastUpdated": "2026-09-02T05:19:02.238Z"
       },
-      "lastFile": "c:\\project_workspace\\zoocat_game_server\\src\\sockets\\authHandlers.ts"
+      "lastFile": "c:\\project_workspace\\zoocat_game_server\\src\\sockets\\connectionRegistry.ts"
+    },
+    "repositories": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-08-31T08:04:23.057Z",
+        "lastUpdated": "2026-08-31T08:04:24.613Z"
+      },
+      "lastFile": "c:\\project_workspace\\zoocat_game_server\\src\\repositories\\userRepository.ts"
     }
   },
   "pipeline": {
@@ -70,7 +108,7 @@
   "session": {
     "startedAt": "2026-08-31T00:44:37.722Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-08-31T02:16:48.007Z"
+    "lastActivity": "2026-09-02T05:19:16.225Z"
   },
   "history": [
     {
@@ -136,6 +174,235 @@
     {
       "timestamp": "2026-08-31T02:16:48.007Z",
       "feature": "scripts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T02:30:00.000Z",
+      "feature": "matchmaking",
+      "phase": "plan",
+      "action": "created"
+    },
+    {
+      "timestamp": "2026-08-31T02:45:00.000Z",
+      "feature": "matchmaking",
+      "phase": "design",
+      "action": "created"
+    },
+    {
+      "timestamp": "2026-08-31T07:30:52.594Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T07:31:02.137Z",
+      "feature": "zoocat_game_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T07:31:10.405Z",
+      "feature": "zoocat_game_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T07:31:28.949Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T07:31:44.388Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T07:31:47.195Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T07:31:48.626Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T07:31:49.716Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T07:31:55.679Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T07:31:57.492Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T07:33:09.448Z",
+      "feature": "scripts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T07:34:11.210Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T07:34:14.214Z",
+      "feature": "scripts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:00:00.000Z",
+      "feature": "matchmaking",
+      "phase": "do",
+      "action": "implemented"
+    },
+    {
+      "timestamp": "2026-08-31T08:20:00.000Z",
+      "feature": "matchmaking",
+      "phase": "check",
+      "action": "analyzed",
+      "matchRate": 96
+    },
+    {
+      "timestamp": "2026-08-31T08:04:23.057Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:04:24.613Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:04:33.004Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:04:34.992Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:04:40.988Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:04:47.700Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:04:53.984Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:04:59.067Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:05:16.542Z",
+      "feature": "scripts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:45:00.000Z",
+      "feature": "matchmaking",
+      "phase": "check",
+      "action": "security-hardening (NoSQL injection, IDOR, broadcast, maxPayload)"
+    },
+    {
+      "timestamp": "2026-08-31T08:28:27.928Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:28:40.406Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:28:47.612Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:28:56.113Z",
+      "feature": "zoocat_game_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T08:29:19.645Z",
+      "feature": "scripts",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-08-31T09:10:00.000Z",
+      "feature": "matchmaking",
+      "phase": "check",
+      "action": "hardening (rate limit, origin check, input caps, deck ownership, heartbeat)"
+    },
+    {
+      "timestamp": "2026-09-02T05:18:51.609Z",
+      "feature": "zoocat_game_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-09-02T05:18:53.932Z",
+      "feature": "zoocat_game_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-09-02T05:19:02.238Z",
+      "feature": "sockets",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-09-02T05:19:09.096Z",
+      "feature": "zoocat_game_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-09-02T05:19:16.225Z",
+      "feature": "zoocat_game_server",
       "phase": "do",
       "action": "updated"
     }

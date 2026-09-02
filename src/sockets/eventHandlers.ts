@@ -5,6 +5,7 @@ import { handleSignup, handleLogin } from './authHandlers';
 import { handleUpdateDeck } from './deckHandlers';
 import { handleJoinLobby, handleLeaveLobby } from './lobbyHandlers';
 import { handleSendMessage } from './messageHandlers';
+import { handleEnqueue, handleDequeue, handleMatchMessage, handleLeaveMatch } from './matchHandlers';
 
 export async function setupEventHandlers(ws: WebSocket, data: string, wss: WebSocketServer) {
     try {
@@ -32,6 +33,19 @@ export async function setupEventHandlers(ws: WebSocket, data: string, wss: WebSo
                 break;
             case 'updateDeck':
                 await handleUpdateDeck(ws, payload);
+                break;
+
+            case 'enqueue':
+                await handleEnqueue(ws);
+                break;
+            case 'dequeue':
+                handleDequeue(ws);
+                break;
+            case 'matchMessage':
+                handleMatchMessage(ws, payload);
+                break;
+            case 'leaveMatch':
+                handleLeaveMatch(ws);
                 break;
             default:
                 console.log('알 수 없는 이벤트:', event);
