@@ -1,15 +1,17 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-09-02T05:19:16.225Z",
+  "lastUpdated": "2026-09-03T07:31:38.128Z",
   "activeFeatures": [
     "config",
     "zoocat_game_server",
     "scripts",
     "sockets",
     "matchmaking",
-    "repositories"
+    "repositories",
+    "shop-server",
+    "auth-session"
   ],
-  "primaryFeature": "matchmaking",
+  "primaryFeature": "auth-session",
   "features": {
     "matchmaking": {
       "phase": "check",
@@ -69,7 +71,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-08-31T01:49:23.486Z",
-        "lastUpdated": "2026-08-31T08:29:19.645Z"
+        "lastUpdated": "2026-09-03T07:31:38.128Z"
       },
       "lastFile": "c:\\project_workspace\\zoocat_game_server\\scripts\\socket-test.ts"
     },
@@ -95,9 +97,51 @@
       "documents": {},
       "timestamps": {
         "started": "2026-08-31T08:04:23.057Z",
-        "lastUpdated": "2026-08-31T08:04:24.613Z"
+        "lastUpdated": "2026-09-03T07:30:44.863Z"
       },
-      "lastFile": "c:\\project_workspace\\zoocat_game_server\\src\\repositories\\userRepository.ts"
+      "lastFile": "c:\\project_workspace\\zoocat_game_server\\src\\repositories\\unitRepository.ts"
+    },
+    "shop-server": {
+      "phase": "plan",
+      "phaseNumber": 1,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [
+        "FR-03 재화 변경은 WalletService 만 + walletUpdated push",
+        "FR-05 shopBuy 원자적 차감+지급",
+        "FR-07 가챠 RNG 서버 롤",
+        "FR-10/11 verifyPurchase Google Play 검증 + 멱등",
+        "FR-12 전 이벤트 getUserId(ws) 기준"
+      ],
+      "documents": {
+        "plan": "docs/01-plan/features/shop-server.plan.md"
+      },
+      "timestamps": {
+        "started": "2026-09-03T00:00:00.000Z",
+        "lastUpdated": "2026-09-03T00:00:00.000Z"
+      },
+      "lastFile": "docs/01-plan/features/shop-server.plan.md"
+    },
+    "auth-session": {
+      "phase": "plan",
+      "phaseNumber": 1,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [
+        "FR-01 서버 생성 userId + deviceSecret",
+        "FR-03 login 은 자격증명 검증, 자동생성 금지",
+        "FR-06 linkProvider (GPGS/Google) → providerUserId",
+        "FR-08 isProviderLinked 헬퍼 (shop 게스트 IAP 게이트)",
+        "FR-10 기존 계정 마이그레이션"
+      ],
+      "documents": {
+        "plan": "docs/01-plan/features/auth-session.plan.md"
+      },
+      "timestamps": {
+        "started": "2026-09-03T00:30:00.000Z",
+        "lastUpdated": "2026-09-03T00:30:00.000Z"
+      },
+      "lastFile": "docs/01-plan/features/auth-session.plan.md"
     }
   },
   "pipeline": {
@@ -108,7 +152,7 @@
   "session": {
     "startedAt": "2026-08-31T00:44:37.722Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-09-02T05:19:16.225Z"
+    "lastActivity": "2026-09-03T07:31:38.128Z"
   },
   "history": [
     {
@@ -403,6 +447,36 @@
     {
       "timestamp": "2026-09-02T05:19:16.225Z",
       "feature": "zoocat_game_server",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-09-03T00:00:00.000Z",
+      "feature": "shop-server",
+      "phase": "plan",
+      "action": "created"
+    },
+    {
+      "timestamp": "2026-09-03T00:30:00.000Z",
+      "feature": "auth-session",
+      "phase": "plan",
+      "action": "created"
+    },
+    {
+      "timestamp": "2026-09-03T07:30:43.753Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-09-03T07:30:44.863Z",
+      "feature": "repositories",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-09-03T07:31:38.128Z",
+      "feature": "scripts",
       "phase": "do",
       "action": "updated"
     }

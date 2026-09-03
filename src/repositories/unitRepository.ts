@@ -23,6 +23,6 @@ export class UnitRepository {
             { id: "1008", unlock: 0, lv: 0, exp: 0, piece: 0 },
             { id: "1009", unlock: 0, lv: 0, exp: 0, piece: 0 }
         ];
-        return await this.getUnitsCollection().insertOne({ userId, units: initialUnits });
+        return await this.getUnitsCollection().insertOne({ userId: String(userId), units: initialUnits });
     }
 }

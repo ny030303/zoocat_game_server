@@ -129,5 +129,7 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-# claude
+# claude / bkit — 로컬 툴링 상태
 /docs/
+.claude/
+.bkit/runtime/
