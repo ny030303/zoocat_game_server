@@ -1,5 +1,5 @@
 export interface UserProfile {
-    id: string;
+    id: string;              // 서버 생성 UUID
     username: string;
     level: number;
     experience: number;
@@ -9,16 +9,7 @@ export interface UserProfile {
     selectedUnits: string[];
     gold: number;
     gems: number;
-}
-
-export interface UserCredentials {
-    id: string;
-    userName: string;
-    underage: string;
-}
-
-export interface UserRegistration {
-    id: string;
-    userName: string;
-    underage: string;
+    underage: boolean;       // register 시 1회 확정, 이후 불변
+    providerType?: 'gpgs';   // Phase 2
+    providerUserId?: string; // Phase 2
 }

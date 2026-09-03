@@ -1,5 +1,5 @@
 import WebSocket from 'ws';
-import { getUserId, sendTo, unbind } from './connectionRegistry';
+import { getUserId, sendTo } from './connectionRegistry';
 import * as queue from '../services/matchmakingService';
 import * as matches from '../services/matchService';
 import { UserRepository } from '../repositories/userRepository';
@@ -116,16 +116,5 @@ export function handleLeaveMatch(ws: WebSocket): void {
     send(ws, 'matchEnded', { matchId, reason: 'left' });
 }
 
-/** socketServer 의 ws.on('close') 에서 호출. 큐·매치에서 정리하고 상대에게 통지. */
-export function handleDisconnect(ws: WebSocket): void {
-    const userId = unbind(ws);
-    if (!userId) return;
-
-    queue.dequeue(userId);
-    const matchId = matches.getMatchIdOf(userId);
-    if (matchId) {
-        const opponentId = matches.opponentOf(matchId, userId);
-        matches.endMatch(matchId);
-        if (opponentId) sendTo(opponentId, 'opponentLeft', { matchId });
-    }
-}
+// 연결 종료 정리는 socketServer 가 cleanupUserState + unbind 로 직접 수행한다.
+// (handleDisconnect 는 cleanupUserState.ts 로 이관됨)

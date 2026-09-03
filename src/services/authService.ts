@@ -1,21 +1,68 @@
-import { UserRepository } from '../repositories/userRepository';
+import { UserProfile } from '../models/userModel';
 import { UserService } from './userService';
-import { UserCredentials, UserProfile } from '../models/userModel';
+import { UserRepository } from '../repositories/userRepository';
+import { DeviceRepository } from '../repositories/deviceRepository';
+import { SessionService } from './sessionService';
+import { generateDeviceSecret, hashSecret, newId, verifySecret } from './credentialService';
 
-export class AuthService {
-    /**
-     * device id 로 유저를 조회하고, 없으면 가입까지 처리한다 (get-or-create).
-     * 게스트/디바이스 로그인 방식이라 별도 자격 증명 검증은 없다.
-     */
-    static async loginOrRegister(
-        credentials: UserCredentials
-    ): Promise<{ userProfile: UserProfile; isNewUser: boolean }> {
-        const existing = await UserRepository.findById(credentials.id);
-        if (existing) {
-            return { userProfile: existing as unknown as UserProfile, isNewUser: false };
-        }
-
-        const { userProfile } = await UserService.registerUser(credentials);
-        return { userProfile, isNewUser: true };
-    }
+export interface AuthResult {
+    userId: string;
+    deviceId: string;
+    deviceSecret?: string; // register 응답에만
+    token: string;
+    tokenHash: string;
+    userProfile: UserProfile;
 }
+
+export interface ResumeResult {
+    userId: string;
+    deviceId: string;
+    tokenHash: string;
+    userProfile: UserProfile;
+}
+
+export const AuthService = {
+    /** 최초 진입 — 서버가 userId + deviceSecret 발급. */
+    async register(userName: string, underage: boolean, ip?: string): Promise<AuthResult> {
+        const profile = await UserService.createAccount(userName, underage);
+        const deviceId = newId();
+        const deviceSecret = generateDeviceSecret();
+        await DeviceRepository.insert({
+            _id: deviceId,
+            userId: profile.id,
+            secretHash: hashSecret(profile.id, deviceSecret),
+            hashVersion: 1,
+            createdAt: new Date(),
+            lastSeenAt: new Date(),
+        });
+        const { token, tokenHash } = await SessionService.issue(profile.id, deviceId, ip);
+        return { userId: profile.id, deviceId, deviceSecret, token, tokenHash, userProfile: profile };
+    },
+
+    /** 게스트 로그인 — userId + deviceId + deviceSecret 검증. */
+    async loginGuest(
+        userId: string,
+        deviceId: string,
+        deviceSecret: string,
+        ip?: string,
+    ): Promise<AuthResult | null> {
+        const row = await DeviceRepository.findActive(deviceId, userId);
+        // row 가 없어도 verifySecret 이 더미 비교 1회 수행 → 타이밍 균일화
+        if (!verifySecret(row?.secretHash, userId, deviceSecret)) return null;
+        const profile = (await UserRepository.findById(userId)) as unknown as UserProfile | null;
+        if (!profile) return null;
+        await DeviceRepository.touch(deviceId);
+        const { token, tokenHash } = await SessionService.issue(userId, deviceId, ip);
+        return { userId, deviceId, token, tokenHash, userProfile: profile };
+    },
+
+    /** 세션 토큰으로 복원. */
+    async resume(token: string): Promise<ResumeResult | null> {
+        const s = await SessionService.verify(token);
+        if (!s) return null;
+        const profile = (await UserRepository.findById(s.userId)) as unknown as UserProfile | null;
+        if (!profile) return null;
+        await SessionService.touch(s.tokenHash);
+        return { userId: s.userId, deviceId: s.deviceId, tokenHash: s.tokenHash, userProfile: profile };
+    },
+};

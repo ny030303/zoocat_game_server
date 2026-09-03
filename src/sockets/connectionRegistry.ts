@@ -1,24 +1,32 @@
 import WebSocket from 'ws';
 
-// 연결 ↔ 유저 신원 매핑. 실시간 기능(매칭 등)이 userId 로 특정 연결을 찾기 위한 공통 레지스트리.
+// 연결 ↔ 검증된 세션 매핑. 실시간 기능이 userId 로 특정 연결을 찾기 위한 공통 레지스트리.
+// bind 는 검증된 세션에서만 호출된다 → getUserId 가 반환하는 userId 는 항상 인증됨.
+
+export interface AuthedSession {
+    userId: string;
+    sessionTokenHash: string;
+}
+
 const byUser = new Map<string, WebSocket>();
-const bySocket = new Map<WebSocket, string>();
+const bySocket = new Map<WebSocket, AuthedSession>();
 
 /**
- * login 성공 시 연결을 userId 에 바인딩한다.
- * 같은 userId 로 이미 연결이 있으면 이전 연결을 닫는다(중복 로그인 방지).
- * 이전 연결의 'close' 이벤트가 뒤이어 발생해 매칭/큐 정리는 그쪽에서 처리된다.
+ * 인증 성공 시 연결을 세션에 바인딩한다.
+ * 같은 userId 의 이전 연결이 있으면 닫는다(중복 로그인 방지).
+ * 같은 소켓이 다른 userId 로 재바인딩되면 이전 매핑을 정리한다.
  */
-export function bind(userId: string, ws: WebSocket): void {
-    // 이 소켓이 다른 userId 로 바인딩돼 있었으면(계정 전환 등) 그 매핑을 정리한다.
-    const prevUserId = bySocket.get(ws);
-    if (prevUserId !== undefined && prevUserId !== userId && byUser.get(prevUserId) === ws) {
-        byUser.delete(prevUserId);
+export function bind(session: AuthedSession, ws: WebSocket): void {
+    const { userId } = session;
+
+    const prev = bySocket.get(ws);
+    if (prev && prev.userId !== userId && byUser.get(prev.userId) === ws) {
+        byUser.delete(prev.userId);
     }
 
     const prevSocket = byUser.get(userId);
     byUser.set(userId, ws);
-    bySocket.set(ws, userId);
+    bySocket.set(ws, session);
     if (prevSocket && prevSocket !== ws && prevSocket.readyState === WebSocket.OPEN) {
         try {
             prevSocket.close(4000, 'replaced by new connection');
@@ -28,11 +36,11 @@ export function bind(userId: string, ws: WebSocket): void {
     }
 }
 
-/** 연결 종료 시 호출. 해제된 userId 를 반환한다(바인딩이 없었으면 undefined). */
+/** 연결 종료/로그아웃 시 호출. 해제된 userId 를 반환(바인딩이 없었으면 undefined). */
 export function unbind(ws: WebSocket): string | undefined {
-    const userId = bySocket.get(ws);
+    const session = bySocket.get(ws);
     bySocket.delete(ws);
-    // 재로그인으로 byUser 가 이미 새 소켓을 가리키면 그대로 둔다.
+    const userId = session?.userId;
     if (userId !== undefined && byUser.get(userId) === ws) {
         byUser.delete(userId);
     }
@@ -40,6 +48,10 @@ export function unbind(ws: WebSocket): string | undefined {
 }
 
 export function getUserId(ws: WebSocket): string | undefined {
+    return bySocket.get(ws)?.userId;
+}
+
+export function getSession(ws: WebSocket): AuthedSession | undefined {
     return bySocket.get(ws);
 }
 

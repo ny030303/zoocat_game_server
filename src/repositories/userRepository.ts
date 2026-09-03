@@ -1,38 +1,52 @@
 import { getDb } from '../config/db';
-import { UserRegistration, UserProfile } from '../models/userModel';
+import { UserProfile } from '../models/userModel';
 
 export class UserRepository {
     private static getCollection() {
-        return getDb().collection('users'); // 필요할 때만 `getDb()` 호출
-    }
-
-    static async findByUsername(username: string) {
-        const usersCollection = this.getCollection();
-        // String() 강제로 NoSQL 연산자 객체({$ne:...} 등) 주입 차단
-        return await usersCollection.findOne({ username: String(username) });
+        return getDb().collection('users');
     }
 
     static async findById(id: string) {
-        const usersCollection = this.getCollection();
-        return await usersCollection.findOne({ id: String(id) });
+        return await this.getCollection().findOne({ id: String(id) });
     }
 
-    static async createUser(userData: UserRegistration, profile: UserProfile) {
-        const usersCollection = this.getCollection();
-        // 클라 페이로드(userData)를 그대로 펼치지 않는다 — 서버가 만든 profile + 화이트리스트 필드만 저장.
-        // mass-assignment 차단: 클라가 deviceSecretHash / providerUserId 등 임의 키를 심는 것을 막음.
-        return await usersCollection.insertOne({
-            ...profile,
-            underage: String(userData.underage ?? ''),
+    static async findByProviderUserId(providerType: string, providerUserId: string) {
+        return await this.getCollection().findOne({
+            providerType: String(providerType),
+            providerUserId: String(providerUserId),
         });
     }
 
-     // 사용자 덱 변경 (selectedUnits 업데이트)
-     static async updateDeck(userId: string, newDeck: string[]) {
-        const usersCollection = this.getCollection();
-        const result = await usersCollection.updateOne(
+    /** 서버가 조립한 화이트리스트 문서만 저장한다. 클라 객체를 spread 하지 않는다. */
+    static async insertUser(p: UserProfile): Promise<void> {
+        await this.getCollection().insertOne({
+            id: p.id,
+            username: p.username,
+            level: p.level,
+            experience: p.experience,
+            friends: p.friends,
+            country: p.country,
+            language: p.language,
+            selectedUnits: p.selectedUnits,
+            gold: p.gold,
+            gems: p.gems,
+            underage: p.underage,
+        });
+    }
+
+    static async updateDeck(userId: string, newDeck: string[]) {
+        const result = await this.getCollection().updateOne(
             { id: String(userId) },
-            { $set: { selectedUnits: newDeck } }
+            { $set: { selectedUnits: newDeck } },
+        );
+        return result.modifiedCount > 0;
+    }
+
+    /** Phase 2: 아직 미연결일 때만 provider 를 연결 (조건부 원자 갱신). */
+    static async linkProvider(userId: string, providerType: string, providerUserId: string): Promise<boolean> {
+        const result = await this.getCollection().updateOne(
+            { id: String(userId), providerUserId: { $exists: false } },
+            { $set: { providerType, providerUserId, linkedAt: new Date() } },
         );
         return result.modifiedCount > 0;
     }

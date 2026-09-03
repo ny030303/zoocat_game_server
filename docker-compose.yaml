@@ -33,6 +33,11 @@ services:
       DB_NAME: zoocat
       CHOKIDAR_USEPOLLING: "true"   # Windows/Docker 바인드 마운트에서 nodemon 핫리로드 활성화
       ADMIN_TOKEN: dev-admin-token  # 로컬 전용. GET /debug/matchmaking 조회용
+      AUTH_PEPPER: dev-pepper-not-a-secret       # 로컬 전용
+      SESSION_IP_SALT: dev-ip-salt-not-a-secret  # 로컬 전용
+      RATE_REGISTER_PER_HOUR: "1000"             # 로컬/테스트 완화
+      RATE_LOGIN_PER_MIN: "1000"
+      RATE_RESUME_PER_MIN: "1000"
     depends_on:
       mongo:
         condition: service_healthy
