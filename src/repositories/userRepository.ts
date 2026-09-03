@@ -19,7 +19,12 @@ export class UserRepository {
 
     static async createUser(userData: UserRegistration, profile: UserProfile) {
         const usersCollection = this.getCollection();
-        return await usersCollection.insertOne({ ...userData, ...profile });
+        // 클라 페이로드(userData)를 그대로 펼치지 않는다 — 서버가 만든 profile + 화이트리스트 필드만 저장.
+        // mass-assignment 차단: 클라가 deviceSecretHash / providerUserId 등 임의 키를 심는 것을 막음.
+        return await usersCollection.insertOne({
+            ...profile,
+            underage: String(userData.underage ?? ''),
+        });
     }
 
      // 사용자 덱 변경 (selectedUnits 업데이트)

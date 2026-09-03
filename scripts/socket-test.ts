@@ -353,6 +353,31 @@ async function main() {
         assert(r.event === 'error', `길이 초과 거부 예상: ${r.event}`);
     });
 
+    await test('보안 — login 페이로드의 잉여 키는 저장 안 됨 (mass-assignment 차단)', async () => {
+        const mid = `mass-${Date.now()}`;
+        const a = new TestClient('mass1');
+        await a.connect();
+        // 잉여 키를 잔뜩 실어 최초 로그인(자동 가입)
+        a.send('login', {
+            id: mid, userName: mid, underage: 'false',
+            deviceSecretHash: 'x', providerUserId: 'victim', role: 'admin', gold: 999999,
+        });
+        await a.waitFor(['loginSuccess', 'loginError']);
+        a.close();
+        // 재로그인 — 기존 유저 경로는 DB 문서를 그대로 반환하므로 여기서 검사
+        const b = new TestClient('mass2');
+        await b.connect();
+        b.send('login', { id: mid, userName: mid, underage: 'false' });
+        const r = await b.waitFor(['loginSuccess', 'loginError']);
+        const p = r.data?.userProfile ?? {};
+        assert(
+            !('deviceSecretHash' in p) && !('providerUserId' in p) && !('role' in p),
+            `잉여 키가 저장됨: ${Object.keys(p).join(',')}`,
+        );
+        assert(p.gold === 1000, `gold 에 클라값 주입됨: ${p.gold}`);
+        b.close();
+    });
+
     c3.close();
     c1.close();
     c2.close();
