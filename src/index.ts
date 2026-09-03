@@ -1,9 +1,8 @@
 import express, { Request, Response } from 'express';
 import { createServer } from 'http';
-import { Server as SocketIOServer } from 'socket.io';
-// import { setupSocketHandlers } from './sockets/wsHandlers';
 import { setupSocketHandlers } from './sockets/socketServer';
 import { connectDb, getDb } from './config/db';
+import { ensureIndexes } from './config/indexes';
 import * as matchmaking from './services/matchmakingService';
 import * as matchService from './services/matchService';
 import * as connectionRegistry from './sockets/connectionRegistry';
@@ -16,15 +15,7 @@ const port = Number(process.env.PORT) || 3000;
 // HTTP 서버 생성
 const httpServer = createServer(app);
 
-// 소켓 서버 생성
-const io = new SocketIOServer(httpServer, {
-    cors: {
-        origin: "*",
-    },
-});
-
 app.use(express.json());
-// app.use('/api', router);
 
 // 헬스체크 — 배포 컨테이너 healthcheck / deploy 스크립트가 폴링
 app.get('/health', (_req: Request, res: Response) => {
@@ -60,10 +51,8 @@ app.get('/debug/matchmaking', (req: Request, res: Response) => {
 async function startServer() {
     try {
         await connectDb(); // 서버 시작 전에 DB 연결
-        // await connectToDatabase(MONGO_URI, DB_NAME);
-        
-        // 소켓 핸들러 설정
-        // setupSocketHandlers(io);
+        await ensureIndexes(getDb());
+
         setupSocketHandlers(httpServer);
 
         // 서버 시작

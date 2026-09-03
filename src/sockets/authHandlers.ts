@@ -1,51 +1,81 @@
 import WebSocket from 'ws';
 import { AuthService } from '../services/authService';
-import { UserService } from '../services/userService';
-import { UserRegistration, UserCredentials } from '../models/userModel';
-import { bind } from './connectionRegistry';
+import { SessionService } from '../services/sessionService';
+import { bind, getSession, getUserId, unbind } from './connectionRegistry';
+import { cleanupUserState } from './cleanupUserState';
+import { asObject, isSecretFormat, isStr, isTokenFormat, isUuid } from './validate';
 
-/** id·userName 이 길이 제한 안의 비어있지 않은 문자열인지 검증 (NoSQL 연산자 객체 주입 차단). */
-function isValidCredential(c: unknown): c is { id: string; userName: string; underage?: unknown } {
-    if (typeof c !== 'object' || c === null) return false;
-    const { id, userName } = c as Record<string, unknown>;
-    return (
-        typeof id === 'string' &&
-        id.length > 0 &&
-        id.length <= 128 &&
-        typeof userName === 'string' &&
-        userName.length > 0 &&
-        userName.length <= 32
-    );
+function send(ws: WebSocket, event: string, data: unknown): void {
+    ws.send(JSON.stringify({ event, data }));
 }
 
-export async function handleSignup(ws: WebSocket, registrationData: UserRegistration) {
+type Ip = string | undefined;
+
+/** 최초 진입 — 서버가 userId + deviceSecret + 세션 토큰 발급. */
+export async function handleRegister(ws: WebSocket, payload: unknown, ip: Ip): Promise<void> {
+    if (getUserId(ws)) return send(ws, 'error', '이미 로그인되어 있습니다');
+    const p = asObject(payload);
+    if (!isStr(p.userName, 1, 32)) return send(ws, 'registerError', '잘못된 요청입니다');
+    const underage = p.underage === true || p.underage === 'true';
     try {
-        if (!isValidCredential(registrationData)) {
-            return ws.send(JSON.stringify({ event: 'signupError', data: '잘못된 요청입니다' }));
-        }
-        const result = await UserService.registerUser(registrationData);
-        ws.send(JSON.stringify({ event: 'signupResult', data: result }));
-    } catch (error) {
-        ws.send(JSON.stringify({ event: 'signupError', data: (error as Error).message }));
+        const r = await AuthService.register(p.userName, underage, ip);
+        bind({ userId: r.userId, sessionTokenHash: r.tokenHash }, ws);
+        send(ws, 'registered', {
+            userId: r.userId,
+            deviceId: r.deviceId,
+            deviceSecret: r.deviceSecret,
+            token: r.token,
+            userProfile: r.userProfile,
+        });
+    } catch {
+        send(ws, 'registerError', '가입에 실패했습니다');
     }
 }
 
-export async function handleLogin(ws: WebSocket, credentials: UserCredentials) {
-    try {
-        if (!isValidCredential(credentials)) {
-            return ws.send(JSON.stringify({ event: 'loginError', data: '잘못된 요청입니다' }));
-        }
-        const { userProfile, isNewUser } = await AuthService.loginOrRegister(credentials);
-        bind(userProfile.id, ws); // 이후 매칭 등 실시간 기능이 이 연결을 userId 로 찾는다
-        ws.send(JSON.stringify({
-            event: 'loginSuccess',
-            data: {
-                message: isNewUser ? '신규 가입 및 로그인' : '로그인 성공',
-                userProfile,
-                isNewUser,
-            },
-        }));
-    } catch (error) {
-        ws.send(JSON.stringify({ event: 'loginError', data: (error as Error).message }));
+/** 게스트 로그인. */
+export async function handleLogin(ws: WebSocket, payload: unknown, ip: Ip): Promise<void> {
+    if (getUserId(ws)) return send(ws, 'error', '이미 로그인되어 있습니다');
+    const p = asObject(payload);
+    if (!isUuid(p.userId) || !isUuid(p.deviceId) || !isSecretFormat(p.deviceSecret)) {
+        return send(ws, 'loginError', '잘못된 요청입니다');
     }
+    try {
+        const r = await AuthService.loginGuest(p.userId, p.deviceId, p.deviceSecret, ip);
+        if (!r) return send(ws, 'loginError', '자격 증명이 올바르지 않습니다');
+        bind({ userId: r.userId, sessionTokenHash: r.tokenHash }, ws);
+        send(ws, 'loginSuccess', { token: r.token, userProfile: r.userProfile });
+    } catch {
+        send(ws, 'loginError', '자격 증명이 올바르지 않습니다');
+    }
+}
+
+/** 세션 토큰으로 복원. */
+export async function handleResumeSession(ws: WebSocket, payload: unknown): Promise<void> {
+    if (getUserId(ws)) return send(ws, 'error', '이미 로그인되어 있습니다');
+    const p = asObject(payload);
+    if (!isTokenFormat(p.token)) return send(ws, 'sessionExpired', null);
+    try {
+        const r = await AuthService.resume(p.token);
+        if (!r) return send(ws, 'sessionExpired', null);
+        bind({ userId: r.userId, sessionTokenHash: r.tokenHash }, ws);
+        send(ws, 'loginSuccess', { userProfile: r.userProfile });
+    } catch {
+        send(ws, 'sessionExpired', null);
+    }
+}
+
+/** 로그아웃 — 세션 폐기 + 큐/매치 정리 + unbind. 연결은 유지. */
+export async function handleLogout(ws: WebSocket): Promise<void> {
+    const userId = getUserId(ws);
+    const session = getSession(ws);
+    if (session) {
+        try {
+            await SessionService.revoke(session.sessionTokenHash);
+        } catch {
+            /* noop */
+        }
+    }
+    cleanupUserState(userId);
+    unbind(ws);
+    send(ws, 'loggedOut', null);
 }

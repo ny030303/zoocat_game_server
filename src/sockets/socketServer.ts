@@ -1,12 +1,21 @@
+import { IncomingMessage } from 'http';
 import WebSocket, { WebSocketServer } from 'ws';
 import { setupEventHandlers } from './eventHandlers';
-import { handleDisconnect } from './matchHandlers';
+import { cleanupUserState } from './cleanupUserState';
+import { getUserId, unbind } from './connectionRegistry';
 import { allow, clear as clearRateLimit } from './rateLimiter';
 
-type LiveSocket = WebSocket & { isAlive?: boolean };
+type LiveSocket = WebSocket & { isAlive?: boolean; ip?: string };
+
+const MAX_CONNS_PER_IP = 20;
+
+function extractIp(req: IncomingMessage): string | undefined {
+    const xff = req.headers['x-forwarded-for'];
+    if (typeof xff === 'string' && xff.length > 0) return xff.split(',')[0].trim();
+    return req.socket.remoteAddress ?? undefined;
+}
 
 export function setupSocketHandlers(server: any) {
-    // 허용 Origin 목록 (쉼표 구분). 미설정 시 전체 허용(경고).
     const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
         .split(',')
         .map((s) => s.trim())
@@ -28,7 +37,22 @@ export function setupSocketHandlers(server: any) {
         console.warn('⚠️  ALLOWED_ORIGINS 미설정 — 모든 브라우저 Origin 의 WebSocket 연결을 허용합니다 (CSWSH 위험)');
     }
 
-    wss.on('connection', (ws: LiveSocket) => {
+    const connsPerIp = new Map<string, number>();
+
+    wss.on('connection', (ws: LiveSocket, req: IncomingMessage) => {
+        const ip = extractIp(req);
+        ws.ip = ip;
+
+        if (ip) {
+            const n = (connsPerIp.get(ip) ?? 0) + 1;
+            connsPerIp.set(ip, n);
+            if (n > MAX_CONNS_PER_IP) {
+                connsPerIp.set(ip, n - 1);
+                ws.close(4001, 'too many connections');
+                return;
+            }
+        }
+
         console.log('사용자가 연결되었습니다');
         ws.isAlive = true;
         ws.on('pong', () => {
@@ -40,11 +64,18 @@ export function setupSocketHandlers(server: any) {
                 ws.send(JSON.stringify({ event: 'error', data: '요청이 너무 많습니다' }));
                 return;
             }
-            return setupEventHandlers(ws, data, wss);
+            return setupEventHandlers(ws, data, wss, ip);
         });
         ws.on('close', () => {
-            handleDisconnect(ws);
+            const uid = getUserId(ws);
+            cleanupUserState(uid);
+            unbind(ws);
             clearRateLimit(ws);
+            if (ip) {
+                const c = (connsPerIp.get(ip) ?? 1) - 1;
+                if (c <= 0) connsPerIp.delete(ip);
+                else connsPerIp.set(ip, c);
+            }
             console.log('사용자가 연결을 끊었습니다');
         });
         ws.on('error', (error: Error) => console.error('웹소켓 오류:', error));

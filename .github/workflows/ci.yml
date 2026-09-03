@@ -17,6 +17,24 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
 
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz \
+            | tar -xz gitleaks
+          ./gitleaks detect --no-banner --redact -v
+      - name: 자격증명/payload 로깅 패턴 금지
+        run: |
+          if grep -rnE 'console\.(log|warn|error)\(\s*(payload|data)\b|JSON\.stringify\(\s*payload|console\.(log|warn|error)\([^)]*(deviceSecret|serverAuthCode|\.token\b)' src/; then
+            echo "::error::자격증명/payload 로깅 의심 패턴 발견"
+            exit 1
+          fi
+
   smoke:
     runs-on: ubuntu-latest
     services:
@@ -33,6 +51,11 @@ jobs:
       MONGO_URI: mongodb://localhost:27017/zoocat_ci
       DB_NAME: zoocat_ci
       PORT: "3000"
+      AUTH_PEPPER: ci-pepper-not-a-secret
+      SESSION_IP_SALT: ci-ip-salt-not-a-secret
+      RATE_REGISTER_PER_HOUR: "1000"
+      RATE_LOGIN_PER_MIN: "1000"
+      RATE_RESUME_PER_MIN: "1000"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
